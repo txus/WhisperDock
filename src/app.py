@@ -32,7 +32,7 @@ def transcribe_audio():
     os.remove(temp.name)  # Remove the original file as it's no longer needed
 
     # Call the main executable
-    result = subprocess.run(["/app/whisper/main", "-f", converted_temp.name, "--model", "/app/whisper/models/ggml-base.en.bin"], capture_output=True, text=True)
+    result = subprocess.run(["/app/whisper/main", "-f", converted_temp.name, "--model", "/app/whisper/ggml-model.bin"], capture_output=True, text=True)
 
     # Log the return code and stderr
     app.logger.info(f"Return code: {result.returncode}")

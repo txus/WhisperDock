@@ -1,6 +1,8 @@
 # Use a base image with both C++ and Python
 FROM python:3.8
 
+ARG HF_MODEL=ingrenn/whisper-small-zh-TW
+
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
@@ -11,10 +13,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     git \
     libsndfile1 \
-    ffmpeg
-
-# Clean up APT when done
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    ffmpeg && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory to the root of the app
 WORKDIR /app
@@ -25,17 +24,17 @@ COPY whisper /app/whisper
 # Set the working directory to the whisper directory
 WORKDIR /app/whisper
 
-# Download the model by running the script
-RUN bash ./models/download-ggml-model.sh base.en
-
 # Build the main example
 RUN make
 
+# Install Flask and Gunicorn for the Python app
+RUN pip install Flask gunicorn transformers torch numpy
+
+# Clone Openai Whisper (for converting checkpoints to ggml)
+RUN git clone https://github.com/openai/whisper /app/openai-whisper && git clone https://huggingface.co/${HF_MODEL} /app/finetuned-model && python ./models/convert-h5-to-ggml.py /app/finetuned-model/ /app/openai-whisper . && rm -fr /app/finetuned-model /app/openai-whisper
+
 # Copy the Flask app to the container (assuming it's in the src directory)
 COPY app.py /app/
-
-# Install Flask and Gunicorn for the Python app
-RUN pip install Flask gunicorn
 
 # Expose the port the app runs on
 EXPOSE 5000
